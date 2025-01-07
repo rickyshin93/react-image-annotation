@@ -1,0 +1,8 @@
+{
+  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-packagejson"],
+  "singleQuote": true,
+  "semi": false,
+  "trailingComma": "all",
+  "arrowParens": "avoid",
+  "printWidth": 120
+}
