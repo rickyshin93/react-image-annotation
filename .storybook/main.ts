@@ -31,6 +31,16 @@ const config: StorybookConfig = {
     reactDocgen: 'react-docgen-typescript',
     check: true,
   },
+  rsbuildFinal: config => {
+    // Customize the final Rsbuild config here
+    if (!config.output) {
+      config.output = {}
+    }
+
+    config.output.assetPrefix = '/react-image-annotation/'
+
+    return config
+  },
 }
 
 export default config
