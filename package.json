@@ -32,7 +32,7 @@
     "format": "prettier --write .",
     "lint": "eslint .",
     "prettier": "prettier -c --write \"**/*\"",
-    "release": "pnpm build && pnpm changeset version && pnpm changeset publish --access public",
+    "release": "pnpm build && pnpm changeset version && pnpm changeset publish --access public && git push --follow-tags",
     "storybook": "storybook dev",
     "test": "vitest run"
   },
