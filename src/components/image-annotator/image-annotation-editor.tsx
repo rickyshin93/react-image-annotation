@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AssetRecordType,
   DefaultColorStyle,
+  DefaultFontStyle,
   DefaultSizeStyle,
   DefaultToolbar,
   Editor,
@@ -82,6 +83,7 @@ export function ImageAnnotationEditor({
     // editor.setCurrentTool('geo', { type: 'rectangle' })
     editor.setStyleForNextShapes(DefaultColorStyle, 'red')
     editor.setStyleForNextShapes(DefaultSizeStyle, 's')
+    editor.setStyleForNextShapes(DefaultFontStyle, 'mono')
   }
 
   const getRectangleAnnotations = useCallback(() => {
@@ -183,18 +185,109 @@ export function ImageAnnotationEditor({
       </button>
     )
   }, [getRectangleAnnotations, handleOnDone])
+  const generateShortId = (existingIds: Set<string>): string => {
+    // Use combination of letters and numbers
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const length = 2
+    let id: string
+
+    do {
+      id = Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('')
+    } while (existingIds.has(id))
+
+    existingIds.add(id)
+    return id
+  }
 
   // Modify the useEffect block that monitors shape changes
   useEffect(() => {
     if (!editor) return
 
+    const existingIds = new Set<string>()
+
+    // Collect existing IDs from loaded annotations
+    images.forEach(img => {
+      img.annotations.forEach(ann => {
+        if (ann.label) {
+          existingIds.add(ann.label)
+        }
+      })
+    })
+
+    let creatingShapeId: TLShapeId | null = null
+
+    const handlePointerUp = () => {
+      if (creatingShapeId) {
+        const shape = editor.getShape(creatingShapeId) as TLGeoShape
+        if (shape && shape.type === 'geo' && shape.props.geo === 'rectangle') {
+          const newId = generateShortId(existingIds)
+
+          editor.updateShape({
+            id: shape.id,
+            type: 'geo',
+            props: {
+              ...shape.props,
+              labelColor: 'red',
+              text: newId,
+            },
+          })
+
+          const annotation: Annotation = {
+            id: shape.id,
+            x: shape.x,
+            y: shape.y,
+            width: shape.props.w,
+            height: shape.props.h,
+            rotation: shape.rotation || 0,
+            label: newId,
+            timestamp: Date.now(),
+            metadata: {
+              color: shape.props.color,
+              createdBy: 'user',
+              modifiedAt: Date.now(),
+              version: 1,
+              tags: [],
+              isVerified: false,
+            },
+          }
+
+          onAnnotationCreated?.({
+            image: {
+              id: image?.id as string,
+            },
+            annotation,
+          })
+        }
+        creatingShapeId = null
+      }
+    }
+
+    const handleShapeCreated = (shape: TLUnknownShape) => {
+      const internalShape = shape as TLGeoShape
+      if (internalShape.type === 'geo' && internalShape.props.geo === 'rectangle') {
+        creatingShapeId = internalShape.id
+      }
+    }
     const handleShapeChange = async (
       eventType: 'change' | 'created' | 'delete',
       options?: { prev: TLUnknownShape; next?: TLUnknownShape },
     ) => {
       const { prev } = options || {}
       const shape = prev as TLGeoShape
+      if (!prev || prev.id === creatingShapeId) return
 
+      // Add automatic text for newly created rectangles
+      if (eventType === 'created' && shape.type === 'geo' && shape.props.geo === 'rectangle') {
+        const readableId = generateShortId(existingIds)
+        editor.updateShape({
+          id: shape.id,
+          type: 'geo',
+          props: {
+            ...shape.props,
+            text: readableId,
+          },
+        })
+      }
       const annotation: Annotation = {
         id: shape.id,
         x: shape.x,
@@ -242,10 +335,21 @@ export function ImageAnnotationEditor({
     const debouncedHandler = debounce(handleShapeChange, 100)
 
     if (!hasRegisteredEventHandlers.current && editor && imageShapeId) {
+      editor.sideEffects.registerAfterCreateHandler('shape', handleShapeCreated)
+
       editor.sideEffects.registerAfterChangeHandler('shape', (prev, next) => debouncedHandler('change', { prev, next }))
-      editor.sideEffects.registerAfterCreateHandler('shape', prev => debouncedHandler('created', { prev }))
+
+      editor.on('event', e => {
+        if (e.name === 'pointer_up') {
+          handlePointerUp()
+        }
+      })
       editor.sideEffects.registerAfterDeleteHandler('shape', prev => debouncedHandler('delete', { prev }))
       hasRegisteredEventHandlers.current = true
+      return () => {
+        hasRegisteredEventHandlers.current = false
+        editor.off('event')
+      }
     }
   }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone])
 

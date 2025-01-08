@@ -1,5 +1,17 @@
 # @rockshin/react-image-annotation
 
+## 0.0.20
+
+### Patch Changes
+
+- remove useless code
+
+## 0.0.19
+
+### Patch Changes
+
+- add label
+
 ## 0.0.18
 
 ### Patch Changes
