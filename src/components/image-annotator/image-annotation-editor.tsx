@@ -10,6 +10,7 @@ import {
   TLGeoShape,
   TLImageShape,
   TLShapeId,
+  TLUnknownShape,
   Tldraw,
   TldrawUiMenuItem,
   createShapeId,
@@ -22,7 +23,13 @@ import {
 import './tldraw-reset.css'
 import { TopPanel } from './top-panel'
 import type { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
-export function ImageAnnotationEditor({ images, onDone }: ImageAnnotationEditorProps) {
+export function ImageAnnotationEditor({
+  images,
+  onDone,
+  onAnnotationCreated,
+  onAnnotationChange,
+  onAnnotationDeleted,
+}: ImageAnnotationEditorProps) {
   if (images.length === 0) return <div>Please provided at least one image</div>
   const [imageShapeId, setImageShapeId] = useState<TLShapeId | null>(null)
   const [editor, setEditor] = useState(null as Editor | null)
@@ -160,7 +167,7 @@ export function ImageAnnotationEditor({ images, onDone }: ImageAnnotationEditorP
         },
       })
 
-      onDone({ blob, annotations: currentAnnotations, image: { id: image.id, src: images[currentImageIndex].src } })
+      onDone?.({ blob, annotations: currentAnnotations, image: { id: image.id, src: images[currentImageIndex].src } })
     }
   }, [onDone, editor, imageShapeId, getRectangleAnnotations])
 
@@ -181,16 +188,63 @@ export function ImageAnnotationEditor({ images, onDone }: ImageAnnotationEditorP
   useEffect(() => {
     if (!editor) return
 
-    const handleShapeChange = async () => {
+    const handleShapeChange = async (
+      eventType: 'change' | 'created' | 'delete',
+      options?: { prev: TLUnknownShape; next?: TLUnknownShape },
+    ) => {
+      const { prev } = options || {}
+      const shape = prev as TLGeoShape
+
+      const annotation: Annotation = {
+        id: shape.id,
+        x: shape.x,
+        y: shape.y,
+        width: shape.props.w,
+        height: shape.props.h,
+        rotation: shape.rotation,
+        label: shape.props.text,
+        timestamp: Date.now(),
+        metadata: {
+          color: shape.props.color,
+          createdBy: 'user',
+          modifiedAt: Date.now(),
+          version: 1,
+          tags: [],
+          isVerified: false,
+        },
+      }
+      if (eventType === 'created') {
+        onAnnotationCreated?.({
+          image: {
+            id: image?.id as string,
+          },
+          annotation,
+        })
+      } else if (eventType === 'change') {
+        onAnnotationChange?.({
+          image: {
+            id: image?.id as string,
+          },
+          annotation,
+        })
+      } else if (eventType === 'delete') {
+        onAnnotationDeleted?.({
+          image: {
+            id: image?.id as string,
+          },
+          annotation,
+        })
+      }
+
       await handleOnDone()
     }
 
     const debouncedHandler = debounce(handleShapeChange, 100)
 
     if (!hasRegisteredEventHandlers.current && editor && imageShapeId) {
-      editor.sideEffects.registerAfterChangeHandler('shape', debouncedHandler)
-      editor.sideEffects.registerAfterCreateHandler('shape', debouncedHandler)
-      editor.sideEffects.registerAfterDeleteHandler('shape', debouncedHandler)
+      editor.sideEffects.registerAfterChangeHandler('shape', (prev, next) => debouncedHandler('change', { prev, next }))
+      editor.sideEffects.registerAfterCreateHandler('shape', prev => debouncedHandler('created', { prev }))
+      editor.sideEffects.registerAfterDeleteHandler('shape', prev => debouncedHandler('delete', { prev }))
       hasRegisteredEventHandlers.current = true
     }
   }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone])

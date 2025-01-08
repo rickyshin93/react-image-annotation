@@ -6,13 +6,28 @@ export interface AnnotatorImage {
   type: string
 }
 
+export interface IAnnotationEvent {
+  image: {
+    id: string
+  }
+  annotation: Annotation
+}
+
+export interface IOnDoneEvent {
+  blob: Blob
+  annotations: Annotation[]
+  image: { id: string; src: string }
+}
 export interface ImageAnnotationEditorProps {
   images: {
     id?: string
     src: string
     annotations: Annotation[]
   }[]
-  onDone(result: { blob: Blob; annotations: Annotation[]; image: { id: string; src: string } }): void
+  onDone?(result: IOnDoneEvent): void
+  onAnnotationChange?(params: IAnnotationEvent): void
+  onAnnotationCreated?(params: IAnnotationEvent): void
+  onAnnotationDeleted?(params: IAnnotationEvent): void
 }
 
 export interface Annotation {

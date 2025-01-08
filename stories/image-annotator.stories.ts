@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
 import { ImageAnnotationEditor } from '../src/components/image-annotator/image-annotation-editor'
 import { images } from '../src/components/image-annotator/image-annotator-example'
 import '../src/styles/base.css'
@@ -18,7 +17,6 @@ const meta = {
     images: images,
   },
   // Use `fn` to spy on the onClick arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#action-args
-  args: { onDone: fn() },
 } satisfies Meta<typeof ImageAnnotationEditor>
 
 export default meta
@@ -28,8 +26,17 @@ type Story = StoryObj<typeof meta>
 export const Primary: Story = {
   args: {
     images,
-    onDone: result => {
-      console.log(result)
+    onDone: params => {
+      console.log('Annotations:', params)
+    },
+    onAnnotationChange: params => {
+      console.log('onAnnotationChange', params)
+    },
+    onAnnotationCreated(params) {
+      console.log('onAnnotationCreated', params)
+    },
+    onAnnotationDeleted(params) {
+      console.log('onAnnotationDeleted', params)
     },
   },
 }
