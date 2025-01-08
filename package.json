@@ -10,6 +10,10 @@
     "tldraw"
   ],
   "homepage": "https://rickyshin93.github.io/react-image-annotation/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rickyshin93/react-image-annotation.git"
+  },
   "author": {
     "name": "rickyshin"
   },
