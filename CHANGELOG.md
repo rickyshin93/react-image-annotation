@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.21
+
+### Patch Changes
+
+- change label to number
+
 ## 0.0.20
 
 ### Patch Changes

@@ -37,6 +37,8 @@ export function ImageAnnotationEditor({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [image, setImage] = useState<AnnotatorImage | null>(null)
   const hasRegisteredEventHandlers = useRef(false)
+  const [usedNumbers, setUsedNumbers] = useState<Set<number>>(new Set())
+  const [deletedNumbers, setDeletedNumbers] = useState<number[]>([])
 
   const getImage = async (src: string) => {
     let blob: Blob
@@ -185,33 +187,43 @@ export function ImageAnnotationEditor({
       </button>
     )
   }, [getRectangleAnnotations, handleOnDone])
-  const generateShortId = (existingIds: Set<string>): string => {
-    // Use combination of letters and numbers
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    const length = 2
-    let id: string
 
-    do {
-      id = Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('')
-    } while (existingIds.has(id))
+  const generateShortId = (): string => {
+    // If there are deleted numbers, use the smallest one first
+    if (deletedNumbers.length > 0) {
+      const nextNumber = Math.min(...deletedNumbers)
+      setDeletedNumbers(prev => prev.filter(n => n !== nextNumber))
+      usedNumbers.add(nextNumber)
+      return nextNumber.toString()
+    }
 
-    existingIds.add(id)
-    return id
+    // Find the next available number
+    let nextNumber = 1
+    while (usedNumbers.has(nextNumber) && nextNumber <= 999) {
+      nextNumber++
+    }
+
+    if (nextNumber > 999) {
+      console.warn('Exceeded maximum number of annotations (999)')
+      return '999'
+    }
+
+    usedNumbers.add(nextNumber)
+    return nextNumber.toString()
   }
-
   // Modify the useEffect block that monitors shape changes
   useEffect(() => {
     if (!editor) return
 
-    const existingIds = new Set<string>()
+    const newUsedNumbers = new Set<number>()
 
-    // Collect existing IDs from loaded annotations
-    images.forEach(img => {
-      img.annotations.forEach(ann => {
-        if (ann.label) {
-          existingIds.add(ann.label)
+    images[currentImageIndex].annotations.forEach(annotation => {
+      if (annotation.label) {
+        const num = parseInt(annotation.label)
+        if (!isNaN(num)) {
+          newUsedNumbers.add(num)
         }
-      })
+      }
     })
 
     let creatingShapeId: TLShapeId | null = null
@@ -220,7 +232,7 @@ export function ImageAnnotationEditor({
       if (creatingShapeId) {
         const shape = editor.getShape(creatingShapeId) as TLGeoShape
         if (shape && shape.type === 'geo' && shape.props.geo === 'rectangle') {
-          const newId = generateShortId(existingIds)
+          const newId = generateShortId()
 
           editor.updateShape({
             id: shape.id,
@@ -278,7 +290,7 @@ export function ImageAnnotationEditor({
 
       // Add automatic text for newly created rectangles
       if (eventType === 'created' && shape.type === 'geo' && shape.props.geo === 'rectangle') {
-        const readableId = generateShortId(existingIds)
+        const readableId = generateShortId()
         editor.updateShape({
           id: shape.id,
           type: 'geo',
@@ -321,6 +333,11 @@ export function ImageAnnotationEditor({
           annotation,
         })
       } else if (eventType === 'delete') {
+        const deletedNumber = parseInt(shape.props.text)
+        if (!isNaN(deletedNumber)) {
+          setDeletedNumbers(prev => [...prev, deletedNumber].sort((a, b) => a - b))
+          usedNumbers.delete(deletedNumber)
+        }
         onAnnotationDeleted?.({
           image: {
             id: image?.id as string,
@@ -344,13 +361,17 @@ export function ImageAnnotationEditor({
           handlePointerUp()
         }
       })
-      editor.sideEffects.registerAfterDeleteHandler('shape', prev => debouncedHandler('delete', { prev }))
+
+      editor.sideEffects.registerAfterDeleteHandler('shape', prev => handleShapeChange('delete', { prev }))
       hasRegisteredEventHandlers.current = true
       return () => {
         hasRegisteredEventHandlers.current = false
         editor.off('event')
       }
     }
+
+    setUsedNumbers(newUsedNumbers)
+    setDeletedNumbers([])
   }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone])
 
   useEffect(() => {
