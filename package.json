@@ -1,6 +1,6 @@
 {
   "name": "@rockshin/react-image-annotation",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "keywords": [
     "react",
     "ai",
@@ -39,13 +39,13 @@
     "lint": "eslint .",
     "prepare-release": "sh ./scripts/prepare-release.sh",
     "prettier": "prettier -c --write \"**/*\"",
-    "release": "pnpm build && pnpm changeset publish --access public && git push --follow-tags",
+    "release": "pnpm build && changeset version && pnpm changeset publish --access public && git push --follow-tags",
     "release-and-deploy": "pnpm prepare-release && pnpm release-patch && pnpm deploy:storybook || exit 1",
     "release-and-deploy:major": "pnpm prepare-release && pnpm release-major && pnpm deploy:storybook || exit 1",
     "release-and-deploy:minor": "pnpm prepare-release && pnpm release-minor && pnpm deploy:storybook || exit 1",
-    "release-major": "pnpm changeset add --empty --type major && pnpm release && echo 'Published to npm'",
-    "release-minor": "pnpm changeset add --empty --type minor && pnpm release && echo 'Published to npm'",
-    "release-patch": "pnpm changeset add --empty --type patch && pnpm release && echo 'Published to npm'",
+    "release-major": "pnpm changeset && pnpm release && echo 'Published to npm'",
+    "release-minor": "pnpm changeset && pnpm release && echo 'Published to npm'",
+    "release-patch": "pnpm changeset && pnpm release && echo 'Published to npm'",
     "storybook": "storybook dev",
     "test": "vitest run"
   },

@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.23
+
+### Patch Changes
+
+- hide earaser and text tools
+
 ## 0.0.22
 
 ### Patch Changes
