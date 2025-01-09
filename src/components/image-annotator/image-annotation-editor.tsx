@@ -512,15 +512,15 @@ export function ImageAnnotationEditor({
             const tools = useTools()
             const isCardSelected = useIsToolSelected(tools['select'])
             const isRectangleSelected = useIsToolSelected(tools['rectangle'])
-            const isTextSelected = useIsToolSelected(tools['text'])
-            const isEraserSelected = useIsToolSelected(tools['eraser'])
+            // const isTextSelected = useIsToolSelected(tools['text'])
+            // const isEraserSelected = useIsToolSelected(tools['eraser'])
             const isHandSelected = useIsToolSelected(tools['hand'])
             return (
               <DefaultToolbar {...props}>
                 <TldrawUiMenuItem {...tools['select']} isSelected={isCardSelected} />
                 <TldrawUiMenuItem {...tools['hand']} isSelected={isHandSelected} />
-                <TldrawUiMenuItem {...tools['eraser']} isSelected={isEraserSelected} />
-                <TldrawUiMenuItem {...tools['text']} isSelected={isTextSelected} />
+                {/* <TldrawUiMenuItem {...tools['eraser']} isSelected={isEraserSelected} /> */}
+                {/* <TldrawUiMenuItem {...tools['text']} isSelected={isTextSelected} /> */}
                 <TldrawUiMenuItem {...tools['rectangle']} isSelected={isRectangleSelected} />
               </DefaultToolbar>
             )
