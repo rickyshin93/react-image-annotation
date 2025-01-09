@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.24
+
+### Patch Changes
+
+- change the command to publish and deploy
+
 ## 0.0.23
 
 ### Patch Changes

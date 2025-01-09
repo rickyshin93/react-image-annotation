@@ -1,6 +1,6 @@
 {
   "name": "@rockshin/react-image-annotation",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "keywords": [
     "react",
     "ai",
@@ -37,17 +37,18 @@
     "dev": "rslib build --watch",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "prepare-release": "sh ./scripts/prepare-release.sh",
     "prettier": "prettier -c --write \"**/*\"",
-    "release": "pnpm build && changeset version && pnpm changeset publish --access public && git push --follow-tags",
-    "release-and-deploy": "pnpm prepare-release && pnpm release-patch && pnpm deploy:storybook || exit 1",
-    "release-and-deploy:major": "pnpm prepare-release && pnpm release-major && pnpm deploy:storybook || exit 1",
-    "release-and-deploy:minor": "pnpm prepare-release && pnpm release-minor && pnpm deploy:storybook || exit 1",
-    "release-major": "pnpm changeset && pnpm release && echo 'Published to npm'",
-    "release-minor": "pnpm changeset && pnpm release && echo 'Published to npm'",
-    "release-patch": "pnpm changeset && pnpm release && echo 'Published to npm'",
+    "publish": "pnpm build && pnpm changeset publish --access public && git push --follow-tags",
+    "release-deploy": "pnpm release:prepare && pnpm build && (pnpm release:patch & pnpm build:storybook) && pnpm deploy:storybook",
+    "release-deploy:major": "pnpm release:prepare && pnpm build && (pnpm release:major & pnpm build:storybook) && pnpm deploy:storybook",
+    "release-deploy:minor": "pnpm release:prepare && pnpm build && (pnpm release:minor & pnpm build:storybook) && pnpm deploy:storybook",
+    "release:major": "pnpm changeset && pnpm publish",
+    "release:minor": "pnpm changeset && pnpm publish",
+    "release:patch": "pnpm changeset && pnpm publish",
+    "release:prepare": "sh ./scripts/prepare-release.sh",
     "storybook": "storybook dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "version": "changeset version"
   },
   "dependencies": {
     "react-icons": "^5.4.0"
