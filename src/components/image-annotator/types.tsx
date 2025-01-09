@@ -24,6 +24,14 @@ export interface ImageAnnotationEditorProps {
     src: string
     annotations: Annotation[]
   }[]
+  tools?: {
+    eraser?: {
+      enabled?: boolean
+    }
+    text?: {
+      enabled?: boolean
+    }
+  }
   onDone?(result: IOnDoneEvent): void
   onAnnotationChange?(params: IAnnotationEvent): void
   onAnnotationCreated?(params: IAnnotationEvent): void

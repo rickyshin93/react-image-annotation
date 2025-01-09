@@ -26,12 +26,14 @@ import { TopPanel } from './top-panel'
 import type { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
 export function ImageAnnotationEditor({
   images,
+  tools,
   onDone,
   onAnnotationCreated,
   onAnnotationChange,
   onAnnotationDeleted,
 }: ImageAnnotationEditorProps) {
   if (images.length === 0) return <div>Please provided at least one image</div>
+  const { eraser, text } = tools || {}
   const [imageShapeId, setImageShapeId] = useState<TLShapeId | null>(null)
   const [editor, setEditor] = useState(null as Editor | null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -216,6 +218,7 @@ export function ImageAnnotationEditor({
     if (!editor) return
 
     const newUsedNumbers = new Set<number>()
+    const debouncedHandleOnDone = debounce(handleOnDone, 100)
 
     images[currentImageIndex].annotations.forEach(annotation => {
       if (annotation.label) {
@@ -325,6 +328,7 @@ export function ImageAnnotationEditor({
           },
           annotation,
         })
+        handleOnDone()
       } else if (eventType === 'change') {
         onAnnotationChange?.({
           image: {
@@ -332,6 +336,7 @@ export function ImageAnnotationEditor({
           },
           annotation,
         })
+        handleOnDone()
       } else if (eventType === 'delete') {
         const deletedNumber = parseInt(shape.props.text)
         if (!isNaN(deletedNumber)) {
@@ -344,10 +349,14 @@ export function ImageAnnotationEditor({
           },
           annotation,
         })
+        // Use the debounced handler only for delete operations
+        debouncedDeleteHandler()
       }
-
-      await handleOnDone()
     }
+
+    const debouncedDeleteHandler = debounce(() => {
+      handleOnDone()
+    }, 50) // Increased timeout to ensure it catches multiple deletes
 
     const debouncedHandler = debounce(handleShapeChange, 100)
 
@@ -367,6 +376,8 @@ export function ImageAnnotationEditor({
       return () => {
         hasRegisteredEventHandlers.current = false
         editor.off('event')
+        debouncedDeleteHandler.cancel()
+        debouncedHandler.cancel()
       }
     }
 
@@ -512,15 +523,15 @@ export function ImageAnnotationEditor({
             const tools = useTools()
             const isCardSelected = useIsToolSelected(tools['select'])
             const isRectangleSelected = useIsToolSelected(tools['rectangle'])
-            // const isTextSelected = useIsToolSelected(tools['text'])
-            // const isEraserSelected = useIsToolSelected(tools['eraser'])
+            const isTextSelected = useIsToolSelected(tools['text'])
+            const isEraserSelected = useIsToolSelected(tools['eraser'])
             const isHandSelected = useIsToolSelected(tools['hand'])
             return (
               <DefaultToolbar {...props}>
                 <TldrawUiMenuItem {...tools['select']} isSelected={isCardSelected} />
                 <TldrawUiMenuItem {...tools['hand']} isSelected={isHandSelected} />
-                {/* <TldrawUiMenuItem {...tools['eraser']} isSelected={isEraserSelected} /> */}
-                {/* <TldrawUiMenuItem {...tools['text']} isSelected={isTextSelected} /> */}
+                {eraser?.enabled && <TldrawUiMenuItem {...tools['eraser']} isSelected={isEraserSelected} />}
+                {text?.enabled && <TldrawUiMenuItem {...tools['text']} isSelected={isTextSelected} />}
                 <TldrawUiMenuItem {...tools['rectangle']} isSelected={isRectangleSelected} />
               </DefaultToolbar>
             )
