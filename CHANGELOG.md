@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.32
+
+### Patch Changes
+
+- add onImageChange
+
 ## 0.0.30
 
 ### Patch Changes

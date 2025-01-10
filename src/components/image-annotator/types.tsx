@@ -17,12 +17,22 @@ export interface IOnDoneEvent {
   annotations: Annotation[]
   image: { id: string; src: string }
 }
+
+export interface IImageChangeEvent {
+  index: number
+  image: {
+    id: string
+    src: string
+  }
+}
+
 export interface ImageAnnotationEditorProps {
   images: {
     id?: string
     src: string
     annotations: Annotation[]
   }[]
+  initialImageIndex?: number
   tools?: {
     eraser?: {
       enabled?: boolean
@@ -35,6 +45,7 @@ export interface ImageAnnotationEditorProps {
   onAnnotationChange?(params: IAnnotationEvent): void
   onAnnotationCreated?(params: IAnnotationEvent): void
   onAnnotationDeleted?(params: IAnnotationEvent): void
+  onImageChange?(params: IImageChangeEvent): void
 }
 
 export interface Annotation {

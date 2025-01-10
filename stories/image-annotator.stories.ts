@@ -26,6 +26,7 @@ type Story = StoryObj<typeof meta>
 export const Primary: Story = {
   args: {
     images,
+    initialImageIndex: 1,
     onDone: params => {
       console.log('Annotations:', params)
     },
@@ -37,6 +38,9 @@ export const Primary: Story = {
     },
     onAnnotationDeleted(params) {
       console.log('onAnnotationDeleted', params)
+    },
+    onImageChange(params) {
+      console.log('onImageChange', params)
     },
   },
 }

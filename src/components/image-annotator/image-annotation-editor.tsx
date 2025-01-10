@@ -26,16 +26,18 @@ import type { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './t
 export function ImageAnnotationEditor({
   images,
   tools,
+  initialImageIndex = 0,
   onDone,
   onAnnotationCreated,
   onAnnotationChange,
   onAnnotationDeleted,
+  onImageChange,
 }: ImageAnnotationEditorProps) {
   if (images.length === 0) return <div>Please provided at least one image</div>
   const { eraser, text } = tools || {}
   const [imageShapeId, setImageShapeId] = useState<TLShapeId | null>(null)
   const [editor, setEditor] = useState(null as Editor | null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex < images.length ? initialImageIndex : 0)
   const [image, setImage] = useState<AnnotatorImage | null>(null)
   const hasRegisteredEventHandlers = useRef(false)
   const [usedNumbers, setUsedNumbers] = useState<Set<number>>(new Set())
@@ -492,6 +494,16 @@ export function ImageAnnotationEditor({
     )
     setCurrentImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))
   }
+
+  useEffect(() => {
+    onImageChange?.({
+      index: currentImageIndex,
+      image: {
+        id: images[currentImageIndex].id || '',
+        src: images[currentImageIndex].src,
+      },
+    })
+  }, [currentImageIndex, images, onImageChange])
 
   return (
     <div className="absolute inset-0">
