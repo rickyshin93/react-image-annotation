@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.30
+
+### Patch Changes
+
+- update readme
+
 ## 0.0.28
 
 ### Patch Changes
