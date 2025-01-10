@@ -107,6 +107,9 @@ function AdvancedExample() {
         onAnnotationCreated={handleAnnotationCreated}
         onAnnotationChange={handleAnnotationChange}
         onAnnotationDeleted={handleAnnotationDeleted}
+        onImageChange={({ image }) => {
+          console.log('Image changed', image)
+        }}
         onDone={({ annotations, image }) => {
           console.log('Final annotations:', annotations)
         }}
