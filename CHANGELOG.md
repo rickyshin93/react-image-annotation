@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.35
+
+### Patch Changes
+
+- chore: upate doc
+
 ## 0.0.34
 
 ### Patch Changes
