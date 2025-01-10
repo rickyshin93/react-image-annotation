@@ -52,7 +52,7 @@ export const images = [
         height: 56.296875,
         rotation: 0,
         type: 'rectangle',
-        label: '33e',
+        label: '3',
         timestamp: 1735818846623,
         metadata: {
           color: 'red',
@@ -90,7 +90,7 @@ export const images = [
         height: 139.409662632155,
         rotation: 0.6981317007977318,
         type: 'rectangle',
-        label: '58',
+        label: '5',
         timestamp: 1735818846623,
         metadata: {
           color: 'red',
@@ -115,7 +115,7 @@ export const images = [
         height: 149.15679892691386,
         rotation: 331,
         type: 'rectangle',
-        label: 'fefe',
+        label: '4',
         timestamp: 1735741075414,
         metadata: {
           color: 'red',
@@ -134,7 +134,7 @@ export const images = [
         height: 161.9368388845685,
         rotation: 0,
         type: 'rectangle',
-        label: 'zzd',
+        label: '1',
         timestamp: 1735741075414,
         metadata: {
           color: 'red',
@@ -153,7 +153,7 @@ export const images = [
         height: 117.2600931110135,
         rotation: 0,
         type: 'rectangle',
-        label: '',
+        label: '2',
         timestamp: 1735741075414,
         metadata: {
           color: 'red',
@@ -172,7 +172,7 @@ export const images = [
         height: 200,
         rotation: 0,
         type: 'rectangle',
-        label: ',,,',
+        label: '3',
         timestamp: 1735741075414,
         metadata: {
           color: 'red',
@@ -192,7 +192,7 @@ export default function ImageAnnotatorWrapper() {
     <div className="absolute inset-0">
       <ImageAnnotationEditor
         images={images}
-        onDone={({ blob, annotations }) => {
+        onDone={({ annotations }) => {
           console.log('Annotations:', annotations)
         }}
       />

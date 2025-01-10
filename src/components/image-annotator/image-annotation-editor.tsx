@@ -16,7 +16,6 @@ import {
   TldrawUiMenuItem,
   createShapeId,
   debounce,
-  exportToBlob,
   uniqueId,
   useIsToolSelected,
   useTools,
@@ -79,8 +78,21 @@ export function ImageAnnotationEditor({
     ;(async () => {
       const base64Image = await getImage(images[currentImageIndex].src)
       setImage({ ...base64Image, id: images[currentImageIndex].id || uniqueId() })
+
+      // Update usedNumbers based on current image annotations
+      const newUsedNumbers = new Set<number>()
+      images[currentImageIndex].annotations.forEach(annotation => {
+        if (annotation.label) {
+          const num = parseInt(annotation.label)
+          if (!isNaN(num)) {
+            newUsedNumbers.add(num)
+          }
+        }
+      })
+      setUsedNumbers(newUsedNumbers)
+      setDeletedNumbers([]) // Reset deleted numbers when changing images
     })()
-  }, [currentImageIndex])
+  }, [currentImageIndex, images])
 
   function onMount(editor: Editor) {
     setEditor(editor)
@@ -160,22 +172,14 @@ export function ImageAnnotationEditor({
     if (!editor || !image) return
     const currentAnnotations = getRectangleAnnotations()
 
-    if (imageShapeId) {
-      const blob = await exportToBlob({
-        editor,
-        ids: Array.from(editor.getCurrentPageShapeIds()),
-        format: 'png',
-        opts: {
-          background: true,
-          bounds: editor.getShapePageBounds(imageShapeId)!,
-          padding: 0,
-          scale: 1,
-        },
-      })
-
-      onDone?.({ blob, annotations: currentAnnotations, image: { id: image.id, src: images[currentImageIndex].src } })
-    }
-  }, [onDone, editor, imageShapeId, getRectangleAnnotations])
+    onDone?.({
+      annotations: currentAnnotations,
+      image: {
+        id: image.id,
+        src: images[currentImageIndex].src,
+      },
+    })
+  }, [onDone, editor, getRectangleAnnotations, image, images, currentImageIndex])
 
   const CustomDoneButton = useCallback(() => {
     return (
@@ -195,13 +199,17 @@ export function ImageAnnotationEditor({
     if (deletedNumbers.length > 0) {
       const nextNumber = Math.min(...deletedNumbers)
       setDeletedNumbers(prev => prev.filter(n => n !== nextNumber))
-      usedNumbers.add(nextNumber)
+      setUsedNumbers(prev => {
+        const newSet = new Set(prev)
+        newSet.add(nextNumber)
+        return newSet
+      })
       return nextNumber.toString()
     }
 
-    // Find the next available number
+    // Find the next available number by checking all numbers from 1 up
     let nextNumber = 1
-    while (usedNumbers.has(nextNumber) && nextNumber <= 999) {
+    while (usedNumbers.has(nextNumber)) {
       nextNumber++
     }
 
@@ -210,24 +218,18 @@ export function ImageAnnotationEditor({
       return '999'
     }
 
-    usedNumbers.add(nextNumber)
+    setUsedNumbers(prev => {
+      const newSet = new Set(prev)
+      newSet.add(nextNumber)
+      return newSet
+    })
     return nextNumber.toString()
   }
   // Modify the useEffect block that monitors shape changes
   useEffect(() => {
     if (!editor) return
 
-    const newUsedNumbers = new Set<number>()
     const debouncedHandleOnDone = debounce(handleOnDone, 100)
-
-    images[currentImageIndex].annotations.forEach(annotation => {
-      if (annotation.label) {
-        const num = parseInt(annotation.label)
-        if (!isNaN(num)) {
-          newUsedNumbers.add(num)
-        }
-      }
-    })
 
     let creatingShapeId: TLShapeId | null = null
 
@@ -283,6 +285,7 @@ export function ImageAnnotationEditor({
         creatingShapeId = internalShape.id
       }
     }
+
     const handleShapeChange = async (
       eventType: 'change' | 'created' | 'delete',
       options?: { prev: TLUnknownShape; next?: TLUnknownShape },
@@ -291,18 +294,6 @@ export function ImageAnnotationEditor({
       const shape = prev as TLGeoShape
       if (!prev || prev.id === creatingShapeId) return
 
-      // Add automatic text for newly created rectangles
-      if (eventType === 'created' && shape.type === 'geo' && shape.props.geo === 'rectangle') {
-        const readableId = generateShortId()
-        editor.updateShape({
-          id: shape.id,
-          type: 'geo',
-          props: {
-            ...shape.props,
-            text: readableId,
-          },
-        })
-      }
       const annotation: Annotation = {
         id: shape.id,
         x: shape.x,
@@ -321,27 +312,16 @@ export function ImageAnnotationEditor({
           isVerified: false,
         },
       }
-      if (eventType === 'created') {
-        onAnnotationCreated?.({
-          image: {
-            id: image?.id as string,
-          },
-          annotation,
-        })
-        handleOnDone()
-      } else if (eventType === 'change') {
-        onAnnotationChange?.({
-          image: {
-            id: image?.id as string,
-          },
-          annotation,
-        })
-        handleOnDone()
-      } else if (eventType === 'delete') {
+
+      if (eventType === 'delete') {
         const deletedNumber = parseInt(shape.props.text)
         if (!isNaN(deletedNumber)) {
           setDeletedNumbers(prev => [...prev, deletedNumber].sort((a, b) => a - b))
-          usedNumbers.delete(deletedNumber)
+          setUsedNumbers(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(deletedNumber)
+            return newSet
+          })
         }
         onAnnotationDeleted?.({
           image: {
@@ -349,28 +329,34 @@ export function ImageAnnotationEditor({
           },
           annotation,
         })
-        // Use the debounced handler only for delete operations
         debouncedDeleteHandler()
+      } else {
+        if (eventType === 'change') {
+          onAnnotationChange?.({
+            image: {
+              id: image?.id as string,
+            },
+            annotation,
+          })
+        }
+        handleOnDone()
       }
     }
 
     const debouncedDeleteHandler = debounce(() => {
       handleOnDone()
-    }, 50) // Increased timeout to ensure it catches multiple deletes
+    }, 50)
 
     const debouncedHandler = debounce(handleShapeChange, 100)
 
     if (!hasRegisteredEventHandlers.current && editor && imageShapeId) {
       editor.sideEffects.registerAfterCreateHandler('shape', handleShapeCreated)
-
       editor.sideEffects.registerAfterChangeHandler('shape', (prev, next) => debouncedHandler('change', { prev, next }))
-
       editor.on('event', e => {
         if (e.name === 'pointer_up') {
           handlePointerUp()
         }
       })
-
       editor.sideEffects.registerAfterDeleteHandler('shape', prev => handleShapeChange('delete', { prev }))
       hasRegisteredEventHandlers.current = true
       return () => {
@@ -380,10 +366,7 @@ export function ImageAnnotationEditor({
         debouncedHandler.cancel()
       }
     }
-
-    setUsedNumbers(newUsedNumbers)
-    setDeletedNumbers([])
-  }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone])
+  }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone, generateShortId])
 
   useEffect(() => {
     if (!editor || !image) return

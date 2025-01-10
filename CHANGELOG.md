@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.0.28
+
+### Patch Changes
+
+- rectangle label error fixed
+
 ## 0.0.26
 
 ### Patch Changes

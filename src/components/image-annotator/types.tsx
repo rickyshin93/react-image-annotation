@@ -14,7 +14,6 @@ export interface IAnnotationEvent {
 }
 
 export interface IOnDoneEvent {
-  blob: Blob
   annotations: Annotation[]
   image: { id: string; src: string }
 }
