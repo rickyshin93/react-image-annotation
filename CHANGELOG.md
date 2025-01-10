@@ -1,5 +1,13 @@
 # @rockshin/react-image-annotation
 
+## 0.0.33
+
+### Patch Changes
+
+- chore: test
+- chore: update command for prod
+- update command
+
 ## 0.0.32
 
 ### Patch Changes
