@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.0
+
+### Minor Changes
+
+- feat: add loading component
+
 ## 0.0.35
 
 ### Patch Changes
