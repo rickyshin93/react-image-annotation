@@ -52,6 +52,7 @@
     "version": "changeset version"
   },
   "dependencies": {
+    "motion": "^11.17.0",
     "react-icons": "^5.4.0"
   },
   "devDependencies": {
@@ -70,6 +71,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^18.3.18",
+    "clsx": "^2.1.1",
     "eslint": "^9.12.0",
     "gh-pages": "^6.3.0",
     "globals": "^15.11.0",
