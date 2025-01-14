@@ -1,14 +1,15 @@
 import './button.css'
 
 interface ButtonProps {
+  className?: string
   primary?: boolean
   backgroundColor?: string
   size?: 'small' | 'medium' | 'large'
-  label: string
+  children: string
   onClick?: () => void
 }
 
-export const Button = ({ primary = false, size = 'medium', backgroundColor, label, ...props }: ButtonProps) => {
+export const Button = ({ primary = false, size = 'medium', backgroundColor, children, ...props }: ButtonProps) => {
   const mode = primary ? 'demo-button--primary' : 'demo-button--secondary'
   return (
     <button
@@ -17,7 +18,7 @@ export const Button = ({ primary = false, size = 'medium', backgroundColor, labe
       style={{ backgroundColor }}
       {...props}
     >
-      {label}
+      {children}
     </button>
   )
 }
