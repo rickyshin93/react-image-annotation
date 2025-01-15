@@ -26,6 +26,15 @@ export interface IImageChangeEvent {
   }
 }
 
+export interface IImageLoadErrorEvent {
+  index: number
+  image: {
+    id?: string
+    src: string
+  }
+  error: string
+}
+
 export interface ImageAnnotationEditorProps {
   images: {
     id?: string
@@ -51,6 +60,7 @@ export interface ImageAnnotationEditorProps {
   onAnnotationCreated?(params: IAnnotationEvent): void
   onAnnotationDeleted?(params: IAnnotationEvent): void
   onImageChange?(params: IImageChangeEvent): void
+  onImageLoadError?: (error: Error, image: { id: string; src: string; index: number }) => void
 }
 
 export interface Annotation {
@@ -74,4 +84,19 @@ export interface Annotation {
     isVerified?: boolean // Verification status
     version?: number // Version number of the annotation
   }
+}
+
+export interface LoadImageParams {
+  imageIndex: number
+  images: {
+    id?: string
+    src: string
+    annotations: Annotation[]
+  }[]
+  setIsLoading: (loading: boolean) => void
+  setImageLoadError: (error: Error | null) => void
+  setImage: (image: AnnotatorImage | null) => void
+  setUsedNumbers: (numbers: Set<number>) => void
+  setDeletedNumbers: (numbers: number[]) => void
+  onImageLoadError?: (error: Error, image: { id: string; src: string; index: number }) => void
 }

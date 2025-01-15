@@ -6,8 +6,9 @@ const meta = {
   title: 'Components/ImageAnnotator',
   component: ImageAnnotationEditor,
   parameters: {
-    layout: 'fullscreen',
+    layout: 'centered',
   },
+  tags: ['autodocs'],
 } satisfies Meta<typeof ImageAnnotationEditor>
 
 export default meta
@@ -303,6 +304,30 @@ export const WithMixedSizeImages: Story = {
       {
         id: 'large',
         src: 'https://picsum.photos/1600/1200',
+        annotations: [],
+      },
+    ],
+  },
+}
+
+export const WithFailedImageLoad: Story = {
+  args: {
+    initialImageIndex: 1,
+    images: [
+      {
+        id: 'valid-image',
+        src: 'https://picsum.photos/800/600',
+        annotations: [],
+      },
+      {
+        id: 'failed-image',
+        // Using an invalid URL to simulate a failed image load
+        src: 'https://invalid-image-url.jpg',
+        annotations: [],
+      },
+      {
+        id: 'valid-image',
+        src: 'https://picsum.photos/800/600',
         annotations: [],
       },
     ],

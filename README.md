@@ -25,19 +25,23 @@ Don't forget import styles `import 'tldraw/tldraw.css';`
 ## Basic Usage
 
 ```tsx
-import { ImageAnnotationEditor } from '@your-package/image-annotator'
+import { ImageAnnotationEditor } from '@rockshin/react-image-annotation'
+import 'tldraw/tldraw.css'
+
 function App() {
   const images = [
     {
       id: '1',
       src: 'https://example.com/image1.jpg',
-      annotations: [], // Initial annotations if any
+      annotations: [], // Initial annotations (optional)
     },
   ]
+
   const handleDone = ({ annotations, image }) => {
     console.log('Annotations:', annotations)
     console.log('Image:', image)
   }
+
   return (
     <div style={{ width: '100%', height: '600px', position: 'relative' }}>
       <ImageAnnotationEditor
@@ -58,7 +62,8 @@ function App() {
 ### Multiple Images with Initial Annotations
 
 ```tsx
-import { ImageAnnotationEditor } from '@your-package/image-annotator'
+import { ImageAnnotationEditor } from '@rockshin/react-image-annotation'
+
 function AdvancedExample() {
   const images = [
     {
@@ -77,6 +82,10 @@ function AdvancedExample() {
           metadata: {
             color: 'red',
             createdBy: 'user1',
+            modifiedAt: Date.now(),
+            version: 1,
+            tags: [],
+            isVerified: false,
           },
         },
       ],
@@ -87,28 +96,35 @@ function AdvancedExample() {
       annotations: [],
     },
   ]
-  const handleAnnotationCreated = ({ image, annotation }) => {
-    console.log('New annotation created on image ${image.id}:', annotation)
-  }
-  const handleAnnotationChange = ({ image, annotation }) => {
-    console.log('Annotation changed on image ${image.id}:', annotation)
-  }
-  const handleAnnotationDeleted = ({ image, annotation }) => {
-    console.log('Annotation deleted from image ${image.id}:', annotation)
-  }
+
   return (
     <div style={{ width: '100%', height: '800px', position: 'relative' }}>
       <ImageAnnotationEditor
         images={images}
+        initialImageIndex={0}
         tools={{
           eraser: { enabled: true },
           text: { enabled: true },
         }}
-        onAnnotationCreated={handleAnnotationCreated}
-        onAnnotationChange={handleAnnotationChange}
-        onAnnotationDeleted={handleAnnotationDeleted}
-        onImageChange={({ image }) => {
-          console.log('Image changed', image)
+        outputTriggerOn={{
+          created: true, // Trigger onDone when annotation is created
+          changed: true, // Trigger onDone when annotation is modified
+          deleted: true, // Trigger onDone when annotation is deleted
+        }}
+        onAnnotationCreated={({ image, annotation }) => {
+          console.log('New annotation:', annotation)
+        }}
+        onAnnotationChange={({ image, annotation }) => {
+          console.log('Modified annotation:', annotation)
+        }}
+        onAnnotationDeleted={({ image, annotation }) => {
+          console.log('Deleted annotation:', annotation)
+        }}
+        onImageChange={({ index, image }) => {
+          console.log('Current image:', index, image)
+        }}
+        onImageLoadError={error => {
+          console.error('Image load error:', error)
         }}
         onDone={({ annotations, image }) => {
           console.log('Final annotations:', annotations)
@@ -121,22 +137,47 @@ function AdvancedExample() {
 
 ## Features
 
-- Rectangle annotations with auto-incrementing numeric labels
-- Support for multiple images
-- Image navigation controls
-- Customizable toolbar with rectangle, text, eraser, and hand tools
-- Annotation event callbacks
-- Support for both URL and base64 image sources
+- 🎯 Auto-incrementing numbered annotations (1-999)
+- 🖼️ Multi-image support with navigation
+- 🔄 Automatic reuse of deleted annotation numbers
+- 🎨 Customizable toolbar with:
+  - Rectangle tool
+  - Text tool (optional)
+  - Eraser tool (optional)
+  - Hand tool for navigation
+- 📊 Comprehensive event callbacks
+- 🖼️ Support for both URL and base64 image sources
+- 🔄 Automatic image fitting with aspect ratio preservation
+- ⚡ Real-time annotation updates
+- 🔒 Locked base image to prevent accidental movement
 
-## Notes
+## Important Notes
 
-- The component requires a parent container with relative positioning and explicit dimensions
-- The editor automatically fits images to the viewport while maintaining aspect ratio
-- Annotations are automatically saved when changes occur
-- The component supports up to 999 numbered annotations per image
+1. Container Requirements:
+
+   - Parent container must have `position: relative`
+   - Explicit dimensions (width/height) are required
+
+2. Image Handling:
+
+   - Images automatically fit to viewport
+   - Original aspect ratio is maintained
+   - Base image is locked to prevent accidental movement
+
+3. Annotation Limits:
+
+   - Supports up to 999 numbered annotations per image
+   - Numbers are automatically reused when annotations are deleted
+
+4. Error Handling:
+   - Built-in error handling for image loading
+   - Retry mechanism for failed image loads
+   - Navigation options during error states
 
 ## License
 
 - Same as [tldraw](https://tldraw.dev/)
 
 Keep working on for this project now >>>
+
+🚧 Project under active development. Contributions welcome!
