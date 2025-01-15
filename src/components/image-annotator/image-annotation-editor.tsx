@@ -79,7 +79,10 @@ export function ImageAnnotationEditor({
   useEffect(() => {
     ;(async () => {
       const base64Image = await getImage(images[currentImageIndex].src)
-      setImage({ ...base64Image, id: images[currentImageIndex].id || uniqueId() })
+      setImage({
+        ...base64Image,
+        id: images[currentImageIndex].id || uniqueId(),
+      })
 
       // Update usedNumbers based on current image annotations
       const newUsedNumbers = new Set<number>()
@@ -230,8 +233,6 @@ export function ImageAnnotationEditor({
   // Modify the useEffect block that monitors shape changes
   useEffect(() => {
     if (!editor) return
-
-    const debouncedHandleOnDone = debounce(handleOnDone, 100)
 
     let creatingShapeId: TLShapeId | null = null
 
@@ -386,7 +387,7 @@ export function ImageAnnotationEditor({
           h: image.height,
           mimeType: image.type,
           src: image.src,
-          name: 'image',
+          name: `image-${assetId}`,
           isAnimated: false,
         },
       },
@@ -450,7 +451,7 @@ export function ImageAnnotationEditor({
       removeOnCreate()
       cleanupKeepShapeLocked()
     }
-  }, [image?.src, editor])
+  }, [editor, image?.id])
 
   useEffect(() => {
     if (!editor || !image || !imageShapeId) return
@@ -481,7 +482,7 @@ export function ImageAnnotationEditor({
       },
       { ignoreShapeLock: true },
     )
-
+    setImageShapeId(null) // Reset imageShapeId before changing image
     setCurrentImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))
   }
 
@@ -492,6 +493,7 @@ export function ImageAnnotationEditor({
       },
       { ignoreShapeLock: true },
     )
+    setImageShapeId(null) // Reset imageShapeId before changing image
     setCurrentImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
@@ -535,7 +537,7 @@ export function ImageAnnotationEditor({
           ActionsMenu: null,
           StylePanel: null,
           TopPanel: useCallback(() => {
-            if (!imageShapeId || images.length <= 1) return null
+            // if (!imageShapeId || images.length <= 1) return null
             return (
               <TopPanel
                 onPrevious={prevImage}
