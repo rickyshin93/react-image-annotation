@@ -1,0 +1,2 @@
+@keyframes expandWidth{0%{width:var(--initial-width);margin-right:auto}to{width:100%}}@keyframes slideContent{0%{opacity:0;transform:translate(-20px)}to{opacity:1;transform:translate(0)}}.animate-expand-width{animation:.5s ease-out forwards expandWidth}.animate-slide-content{animation:.5s ease-out forwards slideContent}.prose p{opacity:0;animation:.5s ease-out forwards fadeIn}@keyframes fadeIn{0%{opacity:0;transform:translate(-100px)}to{opacity:1;transform:translate(0)}}.tl-rotate-corner{display:none!important}
+/*# sourceMappingURL=image-annotator-stories.4a42afd5.css.map*/
