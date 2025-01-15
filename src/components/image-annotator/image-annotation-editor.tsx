@@ -6,8 +6,6 @@ import {
   DefaultSizeStyle,
   DefaultToolbar,
   Editor,
-  FileHelpers,
-  MediaHelpers,
   TLGeoShape,
   TLImageShape,
   TLShapeId,
@@ -20,9 +18,12 @@ import {
   useIsToolSelected,
   useTools,
 } from 'tldraw'
+import { CustomDoneButton } from './_components/custom-done-button'
+import { TopPanel } from './_components/top-panel'
 import './tldraw-reset.css'
-import { TopPanel } from './top-panel'
 import type { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
+import { getImage, getRectangleAnnotations, makeSureShapeIsAtBottom } from './utils'
+
 export function ImageAnnotationEditor({
   images,
   tools,
@@ -42,39 +43,6 @@ export function ImageAnnotationEditor({
   const hasRegisteredEventHandlers = useRef(false)
   const [usedNumbers, setUsedNumbers] = useState<Set<number>>(new Set())
   const [deletedNumbers, setDeletedNumbers] = useState<number[]>([])
-
-  const getImage = async (src: string) => {
-    let blob: Blob
-
-    // Check if the src is a base64 string
-    if (src.startsWith('data:')) {
-      // Convert base64 to Blob
-      const base64Data = src.split(',')[1] // Extract the base64 data part
-      const mimeType = src.split(',')[0].split(':')[1].split(';')[0] // Extract the MIME type
-      const byteString = atob(base64Data) // Decode the base64 string
-      const arrayBuffer = new ArrayBuffer(byteString.length) // Create an ArrayBuffer
-      const uint8Array = new Uint8Array(arrayBuffer) // Create a Uint8Array view of the ArrayBuffer
-
-      // Populate the Uint8Array with the decoded data
-      for (let i = 0; i < byteString.length; i++) {
-        uint8Array[i] = byteString.charCodeAt(i)
-      }
-
-      // Create a Blob from the ArrayBuffer
-      blob = new Blob([arrayBuffer], { type: mimeType })
-    } else {
-      // Fetch the image from the URL
-      blob = await fetch(src).then(res => res.blob())
-    }
-
-    // Convert Blob to Data URL
-    const dataUrl = await FileHelpers.blobToDataUrl(blob)
-
-    // Get image dimensions
-    const { w: width, h: height } = await MediaHelpers.getImageSize(blob)
-
-    return { src: dataUrl, width, height, type: blob.type }
-  }
 
   useEffect(() => {
     ;(async () => {
@@ -107,50 +75,6 @@ export function ImageAnnotationEditor({
     editor.setStyleForNextShapes(DefaultFontStyle, 'mono')
   }
 
-  const getRectangleAnnotations = useCallback(() => {
-    if (!editor) return []
-
-    const annotations: Annotation[] = []
-    const shapes = editor.getCurrentPageShapes() as TLGeoShape[]
-
-    shapes.forEach((shape: TLGeoShape) => {
-      if (shape.type === 'geo' && shape.props.geo === 'rectangle') {
-        // Get the original shape properties
-        const originalBounds = {
-          x: shape.x,
-          y: shape.y,
-          width: shape.props.w,
-          height: shape.props.h,
-        }
-
-        // Create annotation with all properties
-        const annotation: Annotation = {
-          id: shape.id,
-          x: originalBounds.x,
-          y: originalBounds.y,
-          width: originalBounds.width,
-          height: originalBounds.height,
-          rotation: shape.rotation || 0, // Get the rotation directly from the shape
-          type: 'rectangle',
-          label: shape.props.text || '',
-          timestamp: Date.now(),
-          metadata: {
-            color: shape.props.color || 'default',
-            createdBy: 'user',
-            modifiedAt: Date.now(),
-            version: 1,
-            tags: [],
-            isVerified: false,
-          },
-        }
-
-        annotations.push(annotation)
-      }
-    })
-
-    return annotations
-  }, [editor])
-
   useEffect(() => {
     if (!editor || !imageShapeId || !image) return
 
@@ -175,7 +99,7 @@ export function ImageAnnotationEditor({
 
   const handleOnDone = useCallback(async () => {
     if (!editor || !image) return
-    const currentAnnotations = getRectangleAnnotations()
+    const currentAnnotations = getRectangleAnnotations(editor)
 
     onDone?.({
       annotations: currentAnnotations,
@@ -184,20 +108,7 @@ export function ImageAnnotationEditor({
         src: images[currentImageIndex].src,
       },
     })
-  }, [onDone, editor, getRectangleAnnotations, image, images, currentImageIndex])
-
-  const CustomDoneButton = useCallback(() => {
-    return (
-      <button
-        className="px-4 py-2 bg-blue-500 text-white rounded-lg z-[300] font-bold pointer-events-auto hover:bg-blue-600 m-2"
-        onClick={async () => {
-          await handleOnDone()
-        }}
-      >
-        Done
-      </button>
-    )
-  }, [getRectangleAnnotations, handleOnDone])
+  }, [onDone, editor, image, images, currentImageIndex])
 
   const generateShortId = (): string => {
     // If there are deleted numbers, use the smallest one first
@@ -407,33 +318,13 @@ export function ImageAnnotationEditor({
       },
     })
 
-    // Make sure the shape is at the bottom of the page
-    function makeSureShapeIsAtBottom() {
-      if (!editor) return
+    const removeOnCreate = editor.sideEffects.registerAfterCreateHandler('shape', () =>
+      makeSureShapeIsAtBottom(editor, shapeId),
+    )
 
-      const shape = editor.getShape(shapeId)
-      if (!shape) return
-
-      const pageId = editor.getCurrentPageId()
-
-      // The shape should always be the child of the current page
-      if (shape.parentId !== pageId) {
-        editor.moveShapesToPage([shape], pageId)
-      }
-
-      // The shape should always be at the bottom of the page's children
-      const siblings = editor.getSortedChildIdsForParent(pageId)
-      const currentBottomShape = editor.getShape(siblings[0])!
-      if (currentBottomShape.id !== shapeId) {
-        editor.sendToBack([shape])
-      }
-    }
-
-    makeSureShapeIsAtBottom()
-
-    const removeOnCreate = editor.sideEffects.registerAfterCreateHandler('shape', makeSureShapeIsAtBottom)
-
-    const removeOnChange = editor.sideEffects.registerAfterChangeHandler('shape', makeSureShapeIsAtBottom)
+    const removeOnChange = editor.sideEffects.registerAfterChangeHandler('shape', () =>
+      makeSureShapeIsAtBottom(editor, shapeId),
+    )
 
     // The shape should always be locked
     const cleanupKeepShapeLocked = editor.sideEffects.registerBeforeChangeHandler('shape', (prev, next) => {
@@ -505,7 +396,7 @@ export function ImageAnnotationEditor({
         src: images[currentImageIndex].src,
       },
     })
-  }, [currentImageIndex, images, onImageChange])
+  }, [currentImageIndex])
 
   return (
     <div className="absolute inset-0">
@@ -514,7 +405,6 @@ export function ImageAnnotationEditor({
         onMount={onMount}
         // onUiEvent={handleUiEvent}
         // overrides={uiOverrides}
-
         components={{
           Toolbar: props => {
             const tools = useTools()
@@ -548,7 +438,7 @@ export function ImageAnnotationEditor({
             )
           }, [imageShapeId, onDone]),
           SharePanel: useCallback(() => {
-            return <CustomDoneButton />
+            return <CustomDoneButton onClick={handleOnDone} />
           }, [imageShapeId, CustomDoneButton]),
         }}
       />

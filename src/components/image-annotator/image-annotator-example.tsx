@@ -185,6 +185,7 @@ export const images = [
       },
     ],
   },
+  { src: 'https://i.ibb.co/jzbpNZs/screenshot-20250115-115808.png', annotations: [] },
 ]
 
 export default function ImageAnnotatorWrapper() {
