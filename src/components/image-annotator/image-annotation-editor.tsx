@@ -14,7 +14,6 @@ import {
   TldrawUiMenuItem,
   createShapeId,
   debounce,
-  uniqueId,
   useIsToolSelected,
   useTools,
 } from 'tldraw'
@@ -22,8 +21,8 @@ import Loading from '../loading'
 import { CustomDoneButton } from './_components/custom-done-button'
 import { TopPanel } from './_components/top-panel'
 import './tldraw-reset.css'
-import type { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
-import { getImage, getRectangleAnnotations, makeSureShapeIsAtBottom } from './utils'
+import { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
+import { getRectangleAnnotations, loadImageForIndex, makeSureShapeIsAtBottom } from './utils'
 
 export function ImageAnnotationEditor({
   images,
@@ -35,6 +34,7 @@ export function ImageAnnotationEditor({
   onAnnotationChange,
   onAnnotationDeleted,
   onImageChange,
+  onImageLoadError,
 }: ImageAnnotationEditorProps) {
   if (images.length === 0) return <div>Please provided at least one image</div>
   const { eraser, text } = tools || {}
@@ -47,36 +47,20 @@ export function ImageAnnotationEditor({
   const isChangingImage = useRef(false)
   const lastChangeTimestamp = useRef<number>(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [imageLoadError, setImageLoadError] = useState<Error | null>(null)
 
   useEffect(() => {
-    ;(async () => {
-      try {
-        setIsLoading(true)
-        const base64Image = await getImage(images[currentImageIndex].src)
-        setImage({
-          ...base64Image,
-          id: images[currentImageIndex].id || uniqueId(),
-        })
-
-        // Update usedNumbers based on current image annotations
-        const newUsedNumbers = new Set<number>()
-        images[currentImageIndex].annotations.forEach(annotation => {
-          if (annotation.label) {
-            const num = parseInt(annotation.label)
-            if (!isNaN(num)) {
-              newUsedNumbers.add(num)
-            }
-          }
-        })
-        setUsedNumbers(newUsedNumbers)
-        setDeletedNumbers([]) // Reset deleted numbers when changing images
-      } catch (error) {
-        console.error('Failed to load image:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    })()
-  }, [currentImageIndex, images])
+    loadImageForIndex({
+      imageIndex: currentImageIndex,
+      images,
+      setIsLoading,
+      setImageLoadError,
+      setImage,
+      setUsedNumbers,
+      setDeletedNumbers,
+      onImageLoadError,
+    })
+  }, [currentImageIndex, images, onImageLoadError])
 
   function onMount(editor: Editor) {
     setEditor(editor)
@@ -408,6 +392,15 @@ export function ImageAnnotationEditor({
   const changeImage = useCallback(
     (direction: 'prev' | 'next') => {
       isChangingImage.current = true
+
+      // First update the index immediately
+      setCurrentImageIndex(prev => {
+        const newIndex =
+          direction === 'prev' ? (prev === 0 ? images.length - 1 : prev - 1) : prev === images.length - 1 ? 0 : prev + 1
+        return newIndex
+      })
+
+      // Then clean up the editor
       editor?.run(
         () => {
           editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
@@ -415,13 +408,7 @@ export function ImageAnnotationEditor({
         { ignoreShapeLock: true },
       )
       setImageShapeId(null)
-      setCurrentImageIndex(prev => {
-        if (direction === 'prev') {
-          return prev === 0 ? images.length - 1 : prev - 1
-        } else {
-          return prev === images.length - 1 ? 0 : prev + 1
-        }
-      })
+
       setTimeout(() => {
         isChangingImage.current = false
       }, 100)
@@ -450,11 +437,89 @@ export function ImageAnnotationEditor({
     }
   }, [currentImageIndex])
 
+  useEffect(() => {
+    if (isChangingImage.current) {
+      // Trigger image loading after index change
+      setImage(null) // Clear current image to show loading state
+      ;(async () => {
+        try {
+          setIsLoading(true)
+          setImageLoadError(null)
+          await loadImageForIndex({
+            imageIndex: currentImageIndex,
+            images,
+            setIsLoading,
+            setImageLoadError,
+            setImage,
+            setUsedNumbers,
+            setDeletedNumbers,
+            onImageLoadError,
+          })
+        } catch (error) {
+          // Error handling is already done in loadImageForIndex
+        } finally {
+          setIsLoading(false)
+        }
+      })()
+    }
+  }, [currentImageIndex, images, onImageLoadError, isChangingImage.current])
+
   return (
     <div className="absolute inset-0">
+      {imageLoadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-50">
+          <div className="text-center p-4">
+            <div className="text-red-600 mb-4">
+              <span className="mr-2">{`Failed to load image ${currentImageIndex + 1} of ${images.length}:`}</span>
+              <span className="text-gray-600">{imageLoadError.message}</span>
+            </div>
+            <div className="space-x-2">
+              <button
+                onClick={() => {
+                  loadImageForIndex({
+                    imageIndex: currentImageIndex,
+                    images,
+                    setIsLoading,
+                    setImageLoadError,
+                    setImage,
+                    setUsedNumbers,
+                    setDeletedNumbers,
+                    onImageLoadError,
+                  })
+                }}
+                className="px-4 py-2 rounded-3xl border border-blue-500 text-blue-500 hover:bg-blue-50 leading-[24px]"
+              >
+                Retry
+              </button>
+              {currentImageIndex > 0 && (
+                <button
+                  onClick={() => prevImage()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-3xl hover:bg-blue-600"
+                >
+                  Prev Image
+                </button>
+              )}
+              {currentImageIndex < images.length - 1 && (
+                <button
+                  onClick={() => nextImage()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-3xl hover:bg-blue-600"
+                >
+                  Next Images
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {isLoading && (
         <div className="absolute top-12 bottom-12 left-0 right-0 flex items-center justify-center z-50">
-          <Loading isLoading={true} loadingText="Loading image..." className="w-[200px]" />
+          <Loading
+            isLoading={true}
+            loadingText={`Loading image ${currentImageIndex + 1} of ${images.length}...`}
+            className="w-[300px] bg-gradient-to-r from-blue-50 to-sky-50"
+            loadingSpinnerClassName="border-blue-500"
+            progressBarClassName="bg-gradient-to-r from-blue-500 to-sky-500"
+          />
         </div>
       )}
       <Tldraw
@@ -493,7 +558,7 @@ export function ImageAnnotationEditor({
                 totalCount={images.length}
               />
             )
-          }, [imageShapeId, onDone]),
+          }, [imageShapeId, onDone, currentImageIndex]),
           SharePanel: useCallback(() => {
             return <CustomDoneButton onClick={handleOnDone} />
           }, [imageShapeId, CustomDoneButton]),

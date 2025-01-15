@@ -1,5 +1,5 @@
-import { Editor, FileHelpers, MediaHelpers, TLGeoShape, TLShapeId } from 'tldraw'
-import { Annotation } from './types'
+import { Editor, FileHelpers, MediaHelpers, TLGeoShape, TLShapeId, uniqueId } from 'tldraw'
+import { Annotation, AnnotatorImage, LoadImageParams } from './types'
 
 const getImage = async (src: string) => {
   let blob: Blob
@@ -99,4 +99,95 @@ const getRectangleAnnotations = (editor: Editor) => {
   return annotations
 }
 
-export { getImage, getRectangleAnnotations, makeSureShapeIsAtBottom }
+const IMAGE_LOAD_TIMEOUT = 30000 // 30 seconds
+
+const loadImageWithTimeout = async (src: string) => {
+  // Validate URL or base64 image data
+  try {
+    if (src.startsWith('data:image/')) {
+      // Validate base64 image format
+      const [header, content] = src.split(',')
+      if (!header.includes('base64') || !content) {
+        throw new Error('Invalid base64 image format')
+      }
+    } else {
+      // Validate regular URL
+      new URL(src)
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid base64 image format') {
+      throw error
+    }
+    throw new Error('Invalid image URL')
+  }
+
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Image load timed out')), IMAGE_LOAD_TIMEOUT)
+  })
+
+  try {
+    const result = await Promise.race([getImage(src), timeoutPromise])
+    return result
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Image load timed out') {
+        throw new Error(`Failed to load image within ${IMAGE_LOAD_TIMEOUT / 1000} seconds`)
+      }
+      // Handle network errors or invalid image errors
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Unable to load image')
+      }
+      if (error.message.includes('base64')) {
+        throw new Error('Invalid base64 image data')
+      }
+    }
+    throw new Error('Failed to load image')
+  }
+}
+
+const loadImageForIndex = async ({
+  imageIndex,
+  images,
+  setIsLoading,
+  setImageLoadError,
+  setImage,
+  setUsedNumbers,
+  setDeletedNumbers,
+  onImageLoadError,
+}: LoadImageParams) => {
+  try {
+    setIsLoading(true)
+    setImageLoadError(null)
+    const base64Image = (await loadImageWithTimeout(images[imageIndex].src)) as AnnotatorImage
+    setImage({
+      ...base64Image,
+      id: images[imageIndex].id || uniqueId(),
+    })
+
+    // Update usedNumbers based on current image annotations
+    const newUsedNumbers = new Set<number>()
+    images[imageIndex].annotations.forEach(annotation => {
+      if (annotation.label) {
+        const num = parseInt(annotation.label)
+        if (!isNaN(num)) {
+          newUsedNumbers.add(num)
+        }
+      }
+    })
+    setUsedNumbers(newUsedNumbers)
+    setDeletedNumbers([]) // Reset deleted numbers when changing images
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Failed to load image')
+    console.error('Failed to load image:', err)
+    setImageLoadError(err)
+    onImageLoadError?.(err, {
+      id: images[imageIndex].id || '',
+      src: images[imageIndex].src,
+      index: imageIndex,
+    })
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+export { getImage, getRectangleAnnotations, loadImageForIndex, loadImageWithTimeout, makeSureShapeIsAtBottom }
