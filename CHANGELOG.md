@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.2
+
+### Patch Changes
+
+- feat: add outputTriggerOn and fix bugs
+
 ## 0.1.1
 
 ### Patch Changes
