@@ -28,6 +28,7 @@ export function ImageAnnotationEditor({
   images,
   tools,
   initialImageIndex = 0,
+  outputTriggerOn,
   onDone,
   onAnnotationCreated,
   onAnnotationChange,
@@ -40,9 +41,10 @@ export function ImageAnnotationEditor({
   const [editor, setEditor] = useState(null as Editor | null)
   const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex < images.length ? initialImageIndex : 0)
   const [image, setImage] = useState<AnnotatorImage | null>(null)
-  const hasRegisteredEventHandlers = useRef(false)
   const [usedNumbers, setUsedNumbers] = useState<Set<number>>(new Set())
   const [deletedNumbers, setDeletedNumbers] = useState<number[]>([])
+  const isChangingImage = useRef(false)
+  const lastChangeTimestamp = useRef<number>(0)
 
   useEffect(() => {
     ;(async () => {
@@ -92,6 +94,7 @@ export function ImageAnnotationEditor({
           h: annotation.height,
           text: annotation.label || '',
           color: annotation.metadata?.color || 'default',
+          labelColor: annotation.metadata?.color || 'default',
         },
       })
     })
@@ -188,6 +191,11 @@ export function ImageAnnotationEditor({
             },
             annotation,
           })
+
+          // Trigger onDone after creation if configured
+          if (outputTriggerOn?.created) {
+            handleOnDone()
+          }
         }
         creatingShapeId = null
       }
@@ -204,9 +212,17 @@ export function ImageAnnotationEditor({
       eventType: 'change' | 'created' | 'delete',
       options?: { prev: TLUnknownShape; next?: TLUnknownShape },
     ) => {
+      if (isChangingImage.current) return
+
       const { prev } = options || {}
       const shape = prev as TLGeoShape
       if (!prev || prev.id === creatingShapeId) return
+
+      const currentTime = Date.now()
+      if (eventType === 'change' && currentTime - lastChangeTimestamp.current < 50) {
+        return
+      }
+      lastChangeTimestamp.current = currentTime
 
       const annotation: Annotation = {
         id: shape.id,
@@ -243,7 +259,11 @@ export function ImageAnnotationEditor({
           },
           annotation,
         })
-        debouncedDeleteHandler()
+
+        // Trigger onDone after deletion if configured
+        if (outputTriggerOn?.deleted) {
+          handleOnDone()
+        }
       } else {
         if (eventType === 'change') {
           onAnnotationChange?.({
@@ -252,8 +272,12 @@ export function ImageAnnotationEditor({
             },
             annotation,
           })
+
+          // Trigger onDone after change if configured
+          if (outputTriggerOn?.changed) {
+            handleOnDone()
+          }
         }
-        handleOnDone()
       }
     }
 
@@ -263,22 +287,28 @@ export function ImageAnnotationEditor({
 
     const debouncedHandler = debounce(handleShapeChange, 100)
 
-    if (!hasRegisteredEventHandlers.current && editor && imageShapeId) {
-      editor.sideEffects.registerAfterCreateHandler('shape', handleShapeCreated)
-      editor.sideEffects.registerAfterChangeHandler('shape', (prev, next) => debouncedHandler('change', { prev, next }))
-      editor.on('event', e => {
-        if (e.name === 'pointer_up') {
-          handlePointerUp()
-        }
-      })
-      editor.sideEffects.registerAfterDeleteHandler('shape', prev => handleShapeChange('delete', { prev }))
-      hasRegisteredEventHandlers.current = true
-      return () => {
-        hasRegisteredEventHandlers.current = false
-        editor.off('event')
-        debouncedDeleteHandler.cancel()
-        debouncedHandler.cancel()
+    // Register handlers and store their cleanup functions
+    const removeCreateHandler = editor.sideEffects.registerAfterCreateHandler('shape', handleShapeCreated)
+    const removeChangeHandler = editor.sideEffects.registerAfterChangeHandler('shape', (prev, next) =>
+      debouncedHandler('change', { prev, next }),
+    )
+    const removeDeleteHandler = editor.sideEffects.registerAfterDeleteHandler('shape', prev =>
+      handleShapeChange('delete', { prev }),
+    )
+
+    editor.on('event', e => {
+      if (e.name === 'pointer_up') {
+        handlePointerUp()
       }
+    })
+
+    return () => {
+      // Cleanup handlers using the returned cleanup functions
+      removeCreateHandler()
+      removeChangeHandler()
+      removeDeleteHandler()
+      debouncedDeleteHandler.cancel()
+      debouncedHandler.cancel()
     }
   }, [editor, imageShapeId, getRectangleAnnotations, handleOnDone, generateShortId])
 
@@ -366,27 +396,32 @@ export function ImageAnnotationEditor({
 
   // const handleUiEvent = useCallback<TLUiEventHandler>((name, data) => {}, [])
 
-  const prevImage = () => {
-    editor?.run(
-      () => {
-        editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
-      },
-      { ignoreShapeLock: true },
-    )
-    setImageShapeId(null) // Reset imageShapeId before changing image
-    setCurrentImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))
-  }
+  const changeImage = useCallback(
+    (direction: 'prev' | 'next') => {
+      isChangingImage.current = true
+      editor?.run(
+        () => {
+          editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
+        },
+        { ignoreShapeLock: true },
+      )
+      setImageShapeId(null)
+      setCurrentImageIndex(prev => {
+        if (direction === 'prev') {
+          return prev === 0 ? images.length - 1 : prev - 1
+        } else {
+          return prev === images.length - 1 ? 0 : prev + 1
+        }
+      })
+      setTimeout(() => {
+        isChangingImage.current = false
+      }, 100)
+    },
+    [editor, images.length],
+  )
 
-  const nextImage = () => {
-    editor?.run(
-      () => {
-        editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
-      },
-      { ignoreShapeLock: true },
-    )
-    setImageShapeId(null) // Reset imageShapeId before changing image
-    setCurrentImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))
-  }
+  const prevImage = useCallback(() => changeImage('prev'), [changeImage])
+  const nextImage = useCallback(() => changeImage('next'), [changeImage])
 
   useEffect(() => {
     onImageChange?.({
@@ -396,6 +431,14 @@ export function ImageAnnotationEditor({
         src: images[currentImageIndex].src,
       },
     })
+  }, [currentImageIndex])
+
+  useEffect(() => {
+    if (isChangingImage.current && editor && image) {
+      setTimeout(() => {
+        handleOnDone()
+      }, 100)
+    }
   }, [currentImageIndex])
 
   return (

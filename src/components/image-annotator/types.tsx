@@ -41,6 +41,11 @@ export interface ImageAnnotationEditorProps {
       enabled?: boolean
     }
   }
+  outputTriggerOn?: {
+    created?: boolean
+    changed?: boolean
+    deleted?: boolean
+  }
   onDone?(result: IOnDoneEvent): void
   onAnnotationChange?(params: IAnnotationEvent): void
   onAnnotationCreated?(params: IAnnotationEvent): void
