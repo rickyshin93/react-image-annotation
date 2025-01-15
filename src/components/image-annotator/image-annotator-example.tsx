@@ -2,9 +2,9 @@ import 'tldraw/tldraw.css'
 import { ImageAnnotationEditor } from './image-annotation-editor'
 
 export const images = [
-  { src: 'https://i.ibb.co/7NmFhm2/6997872.jpg', annotations: [] },
+  { src: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png', annotations: [] },
   {
-    src: 'https://i.ibb.co/XYsNZGw/111.png',
+    src: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
     annotations: [
       {
         id: 'shape:DjVrIbLltAvqCQRJtwi99',
@@ -103,7 +103,7 @@ export const images = [
       },
     ],
   },
-  { src: 'https://i.ibb.co/TbpC4xN/zz.png', annotations: [] },
+  { src: 'https://i.ibb.co/75/6546456456zzx.png', annotations: [] },
   {
     src: 'https://i.ibb.co/nL8ZLsL/screenshot-20241231-002805.png',
     annotations: [
