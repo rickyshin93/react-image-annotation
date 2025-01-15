@@ -178,7 +178,7 @@ export default function Loading({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <div className="transition-all duration-500 ease-out transform">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

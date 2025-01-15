@@ -18,6 +18,7 @@ import {
   useIsToolSelected,
   useTools,
 } from 'tldraw'
+import Loading from '../loading'
 import { CustomDoneButton } from './_components/custom-done-button'
 import { TopPanel } from './_components/top-panel'
 import './tldraw-reset.css'
@@ -45,27 +46,35 @@ export function ImageAnnotationEditor({
   const [deletedNumbers, setDeletedNumbers] = useState<number[]>([])
   const isChangingImage = useRef(false)
   const lastChangeTimestamp = useRef<number>(0)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     ;(async () => {
-      const base64Image = await getImage(images[currentImageIndex].src)
-      setImage({
-        ...base64Image,
-        id: images[currentImageIndex].id || uniqueId(),
-      })
+      try {
+        setIsLoading(true)
+        const base64Image = await getImage(images[currentImageIndex].src)
+        setImage({
+          ...base64Image,
+          id: images[currentImageIndex].id || uniqueId(),
+        })
 
-      // Update usedNumbers based on current image annotations
-      const newUsedNumbers = new Set<number>()
-      images[currentImageIndex].annotations.forEach(annotation => {
-        if (annotation.label) {
-          const num = parseInt(annotation.label)
-          if (!isNaN(num)) {
-            newUsedNumbers.add(num)
+        // Update usedNumbers based on current image annotations
+        const newUsedNumbers = new Set<number>()
+        images[currentImageIndex].annotations.forEach(annotation => {
+          if (annotation.label) {
+            const num = parseInt(annotation.label)
+            if (!isNaN(num)) {
+              newUsedNumbers.add(num)
+            }
           }
-        }
-      })
-      setUsedNumbers(newUsedNumbers)
-      setDeletedNumbers([]) // Reset deleted numbers when changing images
+        })
+        setUsedNumbers(newUsedNumbers)
+        setDeletedNumbers([]) // Reset deleted numbers when changing images
+      } catch (error) {
+        console.error('Failed to load image:', error)
+      } finally {
+        setIsLoading(false)
+      }
     })()
   }, [currentImageIndex, images])
 
@@ -443,6 +452,11 @@ export function ImageAnnotationEditor({
 
   return (
     <div className="absolute inset-0">
+      {isLoading && (
+        <div className="absolute top-12 bottom-12 left-0 right-0 flex items-center justify-center z-50">
+          <Loading isLoading={true} loadingText="Loading image..." className="w-[200px]" />
+        </div>
+      )}
       <Tldraw
         // forceMobile
         onMount={onMount}
