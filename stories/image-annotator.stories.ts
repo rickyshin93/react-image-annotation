@@ -7,6 +7,104 @@ const meta = {
   component: ImageAnnotationEditor,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# Image Annotation Editor
+
+A powerful React component for annotating images with shapes, text, and custom tools.
+
+## Features
+
+- 🎯 Auto-incrementing numbered annotations (1-999)
+- 🖼️ Multi-image support with navigation
+- 🔄 Automatic reuse of deleted annotation numbers
+- 🎨 Customizable toolbar with:
+  - Rectangle tool
+  - Text tool (optional)
+  - Eraser tool (optional)
+  - Hand tool for navigation
+- 📊 Comprehensive event callbacks
+- 🖼️ Support for both URL and base64 image sources
+- 🔄 Automatic image fitting with aspect ratio preservation
+- ⚡ Real-time annotation updates
+- 🔒 Locked base image to prevent accidental movement
+
+## Installation
+
+\`\`\`bash
+npm install @your-package/image-annotator
+\`\`\`
+
+\`\`\`bash
+yarn add @your-package/image-annotator
+\`\`\`
+
+\`\`\`bash
+pnpm add @your-package/image-annotator
+\`\`\`
+
+## Basic Usage
+
+\`\`\`tsx
+import { ImageAnnotationEditor } from '@your-package/image-annotator'
+
+function App() {
+  return (
+    <ImageAnnotationEditor
+      images={[
+        {
+          id: 'image1',
+          src: 'path/to/image.jpg',
+          annotations: []
+        }
+      ]}
+      onDone={(data) => console.log('Annotations:', data)}
+    />
+  )
+}
+\`\`\`
+        `,
+      },
+    },
+  },
+  argTypes: {
+    images: {
+      description: 'Array of images with their annotations',
+      control: 'object',
+    },
+    tools: {
+      description: 'Configuration for annotation tools',
+      control: 'object',
+    },
+    outputTriggerOn: {
+      description: 'Configure when to trigger output callbacks',
+      control: 'object',
+    },
+    initialImageIndex: {
+      description: 'Initial image to display (zero-based index)',
+      control: 'number',
+    },
+    onAnnotationCreated: {
+      description: 'Callback when a new annotation is created',
+      control: false,
+    },
+    onAnnotationChange: {
+      description: 'Callback when an annotation is modified',
+      control: false,
+    },
+    onAnnotationDeleted: {
+      description: 'Callback when an annotation is deleted',
+      control: false,
+    },
+    onImageChange: {
+      description: 'Callback when switching between images',
+      control: false,
+    },
+    onDone: {
+      description: 'Callback when annotation is complete',
+      control: false,
+    },
   },
   tags: ['autodocs'],
 } satisfies Meta<typeof ImageAnnotationEditor>
@@ -193,6 +291,20 @@ export const Basic: Story = {
   args: {
     images: sampleImages,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+### Basic Example
+
+This is the most basic usage of the Image Annotator component. It shows:
+- Loading multiple images
+- Basic annotation capabilities
+- Default tool configuration
+        `,
+      },
+    },
+  },
 }
 
 export const WithPreExistingAnnotations: Story = {
@@ -207,6 +319,25 @@ export const WithCustomTools: Story = {
     tools: {
       eraser: { enabled: true },
       text: { enabled: true },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+### Custom Tools Example
+
+Demonstrates how to configure custom tools:
+\`\`\`tsx
+<ImageAnnotationEditor
+  tools={{
+    eraser: { enabled: true },
+    text: { enabled: true }
+  }}
+/>
+\`\`\`
+        `,
+      },
     },
   },
 }
@@ -233,6 +364,32 @@ export const WithCallbacks: Story = {
     },
     onDone: data => {
       console.log('Done clicked:', data)
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+### Callback Events Example
+
+Shows how to handle various events:
+\`\`\`tsx
+<ImageAnnotationEditor
+  outputTriggerOn={{
+    created: true,
+    changed: true,
+    deleted: true
+  }}
+  onAnnotationCreated={(annotation) => {
+    console.log('New annotation:', annotation)
+  }}
+  onDone={(data) => {
+    console.log('Final annotations:', data)
+  }}
+/>
+\`\`\`
+        `,
+      },
     },
   },
 }
