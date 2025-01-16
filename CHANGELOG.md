@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.6
+
+### Patch Changes
+
+- fix: one image navigate issue and set a new config for navigated
+
 ## 0.1.5
 
 ### Patch Changes
