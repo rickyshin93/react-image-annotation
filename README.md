@@ -110,6 +110,7 @@ function AdvancedExample() {
           created: true, // Trigger onDone when annotation is created
           changed: true, // Trigger onDone when annotation is modified
           deleted: true, // Trigger onDone when annotation is deleted
+          navigated: false, // Trigger onDone when image is navigated
         }}
         onAnnotationCreated={({ image, annotation }) => {
           console.log('New annotation:', annotation)
