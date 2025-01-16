@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.11
+
+### Patch Changes
+
+- fix: dts missing issue
+
 ## 0.1.10
 
 ### Patch Changes

@@ -10,5 +10,5 @@
     "moduleResolution": "bundler",
     "useDefineForClassFields": true
   },
-  "include": ["src", "stories/loading.stories.tsx"]
+  "include": ["src"]
 }
