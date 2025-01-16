@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.13
+
+### Patch Changes
+
+- feat: meta will be user's data
+
 ## 0.1.12
 
 ### Patch Changes
