@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.5
+
+### Patch Changes
+
+- fix: add clsx to deps
+
 ## 0.1.4
 
 ### Patch Changes
