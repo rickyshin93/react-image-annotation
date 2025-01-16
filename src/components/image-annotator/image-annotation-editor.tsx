@@ -391,6 +391,9 @@ export function ImageAnnotationEditor({
 
   const changeImage = useCallback(
     (direction: 'prev' | 'next') => {
+      // Add early return if there's only one image
+      if (images.length <= 1) return
+
       isChangingImage.current = true
 
       // First update the index immediately
@@ -431,11 +434,14 @@ export function ImageAnnotationEditor({
 
   useEffect(() => {
     if (isChangingImage.current && editor && image) {
-      setTimeout(() => {
-        handleOnDone()
-      }, 100)
+      // Only trigger onDone if outputTriggerOn.navigated is true
+      if (outputTriggerOn?.navigated) {
+        setTimeout(() => {
+          handleOnDone()
+        }, 100)
+      }
     }
-  }, [currentImageIndex])
+  }, [currentImageIndex, outputTriggerOn?.navigated])
 
   useEffect(() => {
     if (isChangingImage.current) {
@@ -549,7 +555,6 @@ export function ImageAnnotationEditor({
           ActionsMenu: null,
           StylePanel: null,
           TopPanel: useCallback(() => {
-            // if (!imageShapeId || images.length <= 1) return null
             return (
               <TopPanel
                 onPrevious={prevImage}
@@ -558,7 +563,7 @@ export function ImageAnnotationEditor({
                 totalCount={images.length}
               />
             )
-          }, [imageShapeId, onDone, currentImageIndex]),
+          }, [imageShapeId, onDone, currentImageIndex, images.length]),
           SharePanel: useCallback(() => {
             return <CustomDoneButton onClick={handleOnDone} />
           }, [imageShapeId, CustomDoneButton]),

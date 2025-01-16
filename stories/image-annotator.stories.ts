@@ -349,6 +349,7 @@ export const WithCallbacks: Story = {
       created: true,
       changed: true,
       deleted: true,
+      navigated: false,
     },
     onAnnotationCreated: annotation => {
       console.log('Annotation created:', annotation)
@@ -378,7 +379,8 @@ Shows how to handle various events:
   outputTriggerOn={{
     created: true,
     changed: true,
-    deleted: true
+    deleted: true,
+    navigated: false
   }}
   onAnnotationCreated={(annotation) => {
     console.log('New annotation:', annotation)
@@ -401,9 +403,34 @@ export const WithAutoTriggers: Story = {
       created: true,
       changed: true,
       deleted: true,
+      navigated: true,
     },
     onDone: data => {
       console.log('Auto-triggered on change:', data)
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+### Auto-Trigger Example
+
+Demonstrates automatic triggering of onDone for all possible events:
+\`\`\`tsx
+<ImageAnnotationEditor
+  outputTriggerOn={{
+    created: true,
+    changed: true,
+    deleted: true,
+    navigated: true
+  }}
+  onDone={(data) => {
+    console.log('Auto-triggered:', data)
+  }}
+/>
+\`\`\`
+        `,
+      },
     },
   },
 }
