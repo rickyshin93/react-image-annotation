@@ -517,3 +517,85 @@ export const WithFailedImageLoad: Story = {
     ],
   },
 }
+
+export const WithCustomMetadata: Story = {
+  args: {
+    images: [
+      {
+        id: 'image-with-metadata',
+        src: 'https://fastly.picsum.photos/id/727/800/602.jpg?hmac=TXud4Hami5cc6oxCzbuVUHoTIeP-nNVcU8A1VtS11XE',
+        annotations: [
+          {
+            id: 'shape:custom-metadata',
+            x: 100,
+            y: 100,
+            width: 200,
+            height: 150,
+            rotation: 0,
+            label: '1',
+            timestamp: Date.now(),
+            metadata: {
+              color: 'red',
+              createdBy: 'john_doe',
+              modifiedAt: Date.now(),
+              version: 2,
+              tags: ['important', 'review-needed'],
+              isVerified: true,
+              // Custom metadata fields
+              assignedTo: 'jane_doe',
+              priority: 'high',
+              comments: ['Check this region', 'Needs verification'],
+              customId: 'ABC123',
+            },
+          },
+        ],
+      },
+    ],
+    onAnnotationChange: data => {
+      console.log('Annotation changed with preserved metadata:', data)
+    },
+    onDone: data => {
+      console.log('Final data with preserved metadata:', data)
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+### Custom Metadata Example
+
+Demonstrates how custom metadata is preserved when annotations are modified:
+
+\`\`\`tsx
+const imageWithMetadata = {
+  id: 'image1',
+  src: 'image-url',
+  annotations: [{
+    // ... annotation properties ...
+    metadata: {
+      color: 'red',
+      createdBy: 'john_doe',
+      tags: ['important'],
+      // Custom fields
+      assignedTo: 'jane_doe',
+      priority: 'high',
+      comments: ['Check this region'],
+      customId: 'ABC123'
+    }
+  }]
+}
+
+<ImageAnnotationEditor
+  images={[imageWithMetadata]}
+  onAnnotationChange={(data) => {
+    console.log('Metadata preserved:', data)
+  }}
+/>
+\`\`\`
+
+When modifying annotations, any custom metadata fields will be preserved while still updating standard fields like \`modifiedAt\` and \`color\`.
+        `,
+      },
+    },
+  },
+}

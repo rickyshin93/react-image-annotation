@@ -217,6 +217,9 @@ export function ImageAnnotationEditor({
       }
       lastChangeTimestamp.current = currentTime
 
+      // Find existing annotation metadata if it exists
+      const existingAnnotation = images[currentImageIndex].annotations.find(a => a.id === shape.id)
+
       const annotation: Annotation = {
         id: shape.id,
         x: shape.x,
@@ -227,12 +230,15 @@ export function ImageAnnotationEditor({
         label: shape.props.text,
         timestamp: Date.now(),
         metadata: {
+          // Preserve existing metadata and only override specific fields
+          ...(existingAnnotation?.metadata || {}),
           color: shape.props.color,
-          createdBy: 'user',
           modifiedAt: Date.now(),
-          version: 1,
-          tags: [],
-          isVerified: false,
+          // Only set these fields if they don't exist
+          createdBy: existingAnnotation?.metadata?.createdBy || 'user',
+          version: existingAnnotation?.metadata?.version || 1,
+          tags: existingAnnotation?.metadata?.tags || [],
+          isVerified: existingAnnotation?.metadata?.isVerified ?? false,
         },
       }
 
