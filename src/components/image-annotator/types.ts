@@ -54,6 +54,7 @@ export interface ImageAnnotationEditorProps {
     created?: boolean
     changed?: boolean
     deleted?: boolean
+    navigated?: boolean
   }
   onDone?(result: IOnDoneEvent): void
   onAnnotationChange?(params: IAnnotationEvent): void
