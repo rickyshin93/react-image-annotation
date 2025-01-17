@@ -190,4 +190,20 @@ const loadImageForIndex = async ({
   }
 }
 
-export { getImage, getRectangleAnnotations, loadImageForIndex, loadImageWithTimeout, makeSureShapeIsAtBottom }
+const cleanUpEditor = (editor: Editor) => {
+  editor?.run(
+    () => {
+      editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
+    },
+    { ignoreShapeLock: true },
+  )
+}
+
+export {
+  cleanUpEditor,
+  getImage,
+  getRectangleAnnotations,
+  loadImageForIndex,
+  loadImageWithTimeout,
+  makeSureShapeIsAtBottom,
+}

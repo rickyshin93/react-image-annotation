@@ -22,7 +22,7 @@ import { CustomDoneButton } from './_components/custom-done-button'
 import { TopPanel } from './_components/top-panel'
 import './tldraw-reset.css'
 import { Annotation, AnnotatorImage, ImageAnnotationEditorProps } from './types'
-import { getRectangleAnnotations, loadImageForIndex, makeSureShapeIsAtBottom } from './utils'
+import { cleanUpEditor, getRectangleAnnotations, loadImageForIndex, makeSureShapeIsAtBottom } from './utils'
 
 export function ImageAnnotationEditor({
   images,
@@ -398,24 +398,20 @@ export function ImageAnnotationEditor({
   const changeImage = useCallback(
     (direction: 'prev' | 'next') => {
       // Add early return if there's only one image
-      if (images.length <= 1) return
+      if (images.length <= 1 || !editor) return
 
       isChangingImage.current = true
 
-      // First update the index immediately
+      // Then clean up the editor
+      cleanUpEditor(editor)
+
+      // Update the index
       setCurrentImageIndex(prev => {
         const newIndex =
           direction === 'prev' ? (prev === 0 ? images.length - 1 : prev - 1) : prev === images.length - 1 ? 0 : prev + 1
         return newIndex
       })
 
-      // Then clean up the editor
-      editor?.run(
-        () => {
-          editor?.deleteShapes(Array.from(editor.getCurrentPageShapeIds()))
-        },
-        { ignoreShapeLock: true },
-      )
       setImageShapeId(null)
 
       setTimeout(() => {
@@ -442,6 +438,9 @@ export function ImageAnnotationEditor({
     if (isChangingImage.current && editor && image) {
       // Only trigger onDone if outputTriggerOn.navigated is true
       if (outputTriggerOn?.navigated) {
+        // Clean up the editor first
+        cleanUpEditor(editor)
+
         setTimeout(() => {
           handleOnDone()
         }, 100)
