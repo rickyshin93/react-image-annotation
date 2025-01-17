@@ -1,5 +1,11 @@
 # @rockshin/react-image-annotation
 
+## 0.1.14
+
+### Patch Changes
+
+- fix: clean up annotations after switch image
+
 ## 0.1.13
 
 ### Patch Changes
